@@ -6,6 +6,7 @@ import (
 	"github.com/makhomed/nsd-tool/zonelist"
 	"github.com/makhomed/nsd-tool/delegation"
 	"log"
+	"github.com/makhomed/nsd-tool/ns"
 )
 
 const (
@@ -14,6 +15,7 @@ const (
 usage:
 	nsd-tool generate zonelist <pattern> </path/to/zonelist.conf>
 	nsd-tool check delegation
+	nsd-tool check ns
 `
 )
 
@@ -35,6 +37,10 @@ func main() {
 	case len(os.Args) == 3 && os.Args[1] == "check" && os.Args[2] == "delegation":
 		if err := delegation.Check(conf); err != nil {
 			log.Fatalf("check delegation: %v\n\n", err)
+		}
+	case len(os.Args) == 3 && os.Args[1] == "check" && os.Args[2] == "ns":
+		if err := ns.Check(conf); err != nil {
+			log.Fatalf("check ns: %v\n\n", err)
 		}
 	default:
 		log.Fatalf(usage)

@@ -140,3 +140,29 @@ func NS(conf *config.Config, zone string, servers []string, authority bool) ([]s
 func DelegationNS(conf *config.Config, zone string) ([]string, error) {
 	return NS(conf, zone, NsCache(zone), true)
 }
+
+func SOA(zone string, server string) (*dns.SOA, error) {
+	client := new(dns.Client)
+	message := new(dns.Msg)
+	message.SetQuestion(dns.Fqdn(zone), dns.TypeSOA)
+	message.RecursionDesired = true
+	reply, _, err := client.Exchange(message, net.JoinHostPort(server, "53"))
+	if err != nil {
+		return nil, err
+	}
+	if reply.Rcode == dns.RcodeNameError {
+		return nil, fmt.Errorf("Name Error")
+	}
+
+	if reply.Rcode == dns.RcodeServerFailure {
+		return nil, fmt.Errorf("Server Failure")
+	}
+	if reply.Rcode != dns.RcodeSuccess {
+		return nil, fmt.Errorf("unexpected dns error %d", reply.Rcode)
+	}
+	for _, a := range reply.Answer {
+		rr := a.(*dns.SOA)
+		return rr, nil
+	}
+	return nil, fmt.Errorf("Can't read SOA from %s", server)
+}
