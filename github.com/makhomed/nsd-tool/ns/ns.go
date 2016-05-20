@@ -1,10 +1,9 @@
 package ns
 
 import (
-	"github.com/makhomed/nsd-tool/config"
 	"log"
+	"github.com/makhomed/nsd-tool/config"
 	"github.com/makhomed/nsd-tool/util"
-	"github.com/miekg/dns"
 )
 
 func Check(conf *config.Config) error {
@@ -23,7 +22,7 @@ func Check(conf *config.Config) error {
 }
 
 func compareSOA(zone string, configNS []string) {
-	soas := make([]*dns.SOA, 0)
+	soas := make([]string, 0)
 	for _, ns := range configNS {
 		soa, err := util.SOA(zone, ns)
 		if err != nil {
@@ -35,9 +34,9 @@ func compareSOA(zone string, configNS []string) {
 	if len(soas) == 0 {
 		return
 	}
-	etalon := soas[0].String()
+	etalon := soas[0]
 	for i, soa := range soas {
-		if soa.String() != etalon {
+		if soa != etalon {
 			log.Printf("%s has different SOA on %s\n", zone, configNS[i])
 		}
 	}

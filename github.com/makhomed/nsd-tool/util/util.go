@@ -10,6 +10,9 @@ import (
 	"net"
 	"fmt"
 	"strings"
+	"crypto/sha256"
+	"encoding/hex"
+	"io"
 )
 
 func ConfigZones(conf *config.Config) ([]string, error) {
@@ -43,6 +46,39 @@ func ConfigNS(conf *config.Config, zone string) ([]string, error) {
 		}
 	}
 	return ns, nil
+}
+
+func ConfigSerial(conf *config.Config, zone string) (uint32, error) {
+	file, err := os.Open(filepath.Join(conf.ZoneDir, zone))
+	if err != nil {
+		return 0, err
+	}
+	defer file.Close()
+	for line := range dns.ParseZone(file, zone, file.Name()) {
+		if line.Error != nil {
+			log.Printf("error parsing zone file %s: %v", zone, line.Error)
+		} else {
+			if line.RR.Header().Rrtype != dns.TypeSOA {
+				continue
+			}
+			rr := line.RR.(*dns.SOA)
+			return rr.Serial, nil
+		}
+	}
+	panic("unreachable code")
+}
+
+func ConfigChecksum(conf *config.Config, zone string) (string, error) {
+	file, err := os.Open(filepath.Join(conf.ZoneDir, zone))
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+	hasher := sha256.New()
+	if _, err := io.Copy(hasher, file); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(hasher.Sum(nil)), nil
 }
 
 func Tld(zone string) string {
@@ -141,28 +177,28 @@ func DelegationNS(conf *config.Config, zone string) ([]string, error) {
 	return NS(conf, zone, NsCache(zone), true)
 }
 
-func SOA(zone string, server string) (*dns.SOA, error) {
+func SOA(zone string, server string) (string, error) {
 	client := new(dns.Client)
 	message := new(dns.Msg)
 	message.SetQuestion(dns.Fqdn(zone), dns.TypeSOA)
 	message.RecursionDesired = true
 	reply, _, err := client.Exchange(message, net.JoinHostPort(server, "53"))
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	if reply.Rcode == dns.RcodeNameError {
-		return nil, fmt.Errorf("Name Error")
+		return "", fmt.Errorf("Name Error")
 	}
 
 	if reply.Rcode == dns.RcodeServerFailure {
-		return nil, fmt.Errorf("Server Failure")
+		return "", fmt.Errorf("Server Failure")
 	}
 	if reply.Rcode != dns.RcodeSuccess {
-		return nil, fmt.Errorf("unexpected dns error %d", reply.Rcode)
+		return "", fmt.Errorf("unexpected dns error %d", reply.Rcode)
 	}
 	for _, a := range reply.Answer {
 		rr := a.(*dns.SOA)
-		return rr, nil
+		return rr.String(), nil
 	}
-	return nil, fmt.Errorf("Can't read SOA from %s", server)
+	return "", fmt.Errorf("Can't read SOA from %s", server)
 }

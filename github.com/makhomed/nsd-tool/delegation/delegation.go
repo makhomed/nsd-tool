@@ -1,11 +1,11 @@
 package delegation
 
 import (
-	"github.com/makhomed/nsd-tool/config"
-	"github.com/makhomed/nsd-tool/util"
 	"log"
 	"sort"
 	"strings"
+	"github.com/makhomed/nsd-tool/config"
+	"github.com/makhomed/nsd-tool/util"
 )
 
 func Check(conf *config.Config) error {

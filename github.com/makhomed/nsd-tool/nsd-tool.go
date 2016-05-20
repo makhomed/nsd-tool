@@ -2,11 +2,12 @@ package main
 
 import (
 	"os"
+	"log"
 	"github.com/makhomed/nsd-tool/config"
 	"github.com/makhomed/nsd-tool/zonelist"
 	"github.com/makhomed/nsd-tool/delegation"
-	"log"
 	"github.com/makhomed/nsd-tool/ns"
+	"github.com/makhomed/nsd-tool/soa"
 )
 
 const (
@@ -14,8 +15,9 @@ const (
 	usage = `
 usage:
 	nsd-tool generate zonelist <pattern> </path/to/zonelist.conf>
-	nsd-tool check delegation
-	nsd-tool check ns
+	nsd-tool check delegation - check for correct zone delegation
+	nsd-tool check soa - check for serial perfection of all zones
+	nsd-tool check ns - check for equality all zone SOA on all NS
 `
 )
 
@@ -37,6 +39,10 @@ func main() {
 	case len(os.Args) == 3 && os.Args[1] == "check" && os.Args[2] == "delegation":
 		if err := delegation.Check(conf); err != nil {
 			log.Fatalf("check delegation: %v\n\n", err)
+		}
+	case len(os.Args) == 3 && os.Args[1] == "check" && os.Args[2] == "soa":
+		if err := soa.Check(conf); err != nil {
+			log.Fatalf("check soa: %v\n\n", err)
 		}
 	case len(os.Args) == 3 && os.Args[1] == "check" && os.Args[2] == "ns":
 		if err := ns.Check(conf); err != nil {
