@@ -6,14 +6,17 @@ import (
 	"bufio"
 	"strings"
 	"strconv"
+	"regexp"
 )
 
 type Config struct {
 	ZoneDir string
+	Resolver string
 }
 
 func defaultConfig() *Config {
 	return &Config{
+		"",
 		"",
 	}
 }
@@ -43,6 +46,7 @@ func New(configFileName string) (*Config, error) {
 		value = strings.TrimSpace(value)
 		setter := configSetter{}
 		setter.setString("zoneDir", &conf.ZoneDir, name, value)
+		setter.setString("resolver", &conf.Resolver, name, value)
 		if err := setter.err(); err != nil {
 			return nil, err
 		}
@@ -84,6 +88,10 @@ func verifyConfig(conf *Config) (*Config, error) {
 	}
 	if !stat.IsDir() {
 		return nil, fmt.Errorf("bad 'zoneDir' value '%s' : must be directory", conf.ZoneDir)
+	}
+	validResolver := regexp.MustCompile(`\d+\.\d+\.\d+\.\d+`)
+	if !validResolver.MatchString(conf.Resolver) {
+		return nil, fmt.Errorf("bad 'resolver' value '%s' : must be IP addr", conf.Resolver)
 	}
 	return conf, nil
 }
