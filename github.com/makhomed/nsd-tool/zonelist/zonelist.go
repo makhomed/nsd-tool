@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-
 	"github.com/makhomed/nsd-tool/config"
 )
 
@@ -48,6 +47,14 @@ func Generate(conf *config.Config, pattern string, filename string) error {
 		}
 	}
 	newZoneList.Close()
+	var mode os.FileMode
+	stat, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		mode = 0644
+	} else {
+		mode = stat.Mode()
+	}
+	os.Chmod(newZoneList.Name(), mode)
 	err = os.Rename(newZoneList.Name(), filename)
 	if err != nil {
 		return err
